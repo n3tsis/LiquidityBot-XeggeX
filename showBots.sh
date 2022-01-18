@@ -103,9 +103,9 @@ function trimString()
 TABLE="Market,PID,Status\n"
 for f in ./pidfiles/*.pid; do
 	PID=`cat $f`
-	if ps -o pid= -p $PID > /dev/null
 	MARKET=$(sed 's/.\/pidfiles\//''/g' <<<"$f")
 	MARKET=$(sed 's/.pid/''/g' <<<"$MARKET")
+	if ps -o pid= -p $PID > 0
 	then
 	  TABLE+="$MARKET,$PID,Running\n"
 	  # Do something knowing the pid exists, i.e. the process with $PID is running
