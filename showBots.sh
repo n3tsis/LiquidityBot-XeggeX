@@ -105,7 +105,7 @@ for f in ./pidfiles/*.pid; do
 	PID=`cat $f`
 	MARKET=$(sed 's/.\/pidfiles\//''/g' <<<"$f")
 	MARKET=$(sed 's/.pid/''/g' <<<"$MARKET")
-	if ps -o pid= -p $PID > 0
+	if ps -o pid= -p $PID > /dev/null
 	then
 	  TABLE+="$MARKET,$PID,Running\n"
 	  # Do something knowing the pid exists, i.e. the process with $PID is running

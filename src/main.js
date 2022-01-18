@@ -72,9 +72,13 @@ onShutdown("main", async function () {
   return new Promise((resolve, reject) => {
 
     (async () => {
-			
-      var apiresp = await restapi.cancelAllOrders(opts.stock + '/' + opts.base, 'all');
-					
+
+		try {
+			await restapi.cancelAllOrders(opts.stock + '/' + opts.base, 'all');
+		} catch (e) {
+			console.log(e);
+		}
+	
       console.log('Cancel open orders');
       
       fs.unlinkSync("./pidfiles/" + opts.stock + "_" + opts.base + ".pid")
@@ -99,8 +103,14 @@ async function runIt()
 	}
 
 	// Get last trade
-    var apiresp = await restapi.getTradeHistorySince(opts.stock + '/' + opts.base, lastCheckTime);
-
+	var apiresp = [];
+	
+	try {
+   		apiresp = await restapi.getTradeHistorySince(opts.stock + '/' + opts.base, lastCheckTime);
+	} catch (e) {
+		console.log(e);
+	}
+	
 	for (let t = 0; t < apiresp.length; t++)
 	{
 	
@@ -119,15 +129,26 @@ async function runIt()
 
     		var newprice = (lastPrice + (lastPrice * (opts.spread / 2))).toFixed(10);
 
-    		var orderinfo = await restapi.createLimitOrder(opts.stock + '/' +  opts.base, 'sell', thistrade.quantity, newprice, uuid);
-
-console.log(orderinfo);
-
+			try {
+    			var orderinfo = await restapi.createLimitOrder(opts.stock + '/' +  opts.base, 'sell', thistrade.quantity, newprice, uuid);
+				console.log(orderinfo);
+			} catch (e) {
+				console.log(e);
+			}
+			
     		// Then cancel the sell order with the max price
     		
 			var oomaxprice = null;
 			var cxlorderid = null;
-			var openorders = await restapi.getOpenOrders(opts.stock + '/' +  opts.base);
+			
+			var openorders = [];
+			
+			try {
+				openorders = await restapi.getOpenOrders(opts.stock + '/' +  opts.base);
+			} catch (e) {
+				console.log(e);
+			}
+			
 			for (let i = 0; i < openorders.length; i++)
 			{
 		
@@ -146,9 +167,11 @@ console.log(orderinfo);
 			
 			if (cxlorderid != null)
 			{
-			
-				await restapi.cancelOrder(cxlorderid);
-			
+				try {
+					await restapi.cancelOrder(cxlorderid);
+				} catch (e) {
+					console.log(e);
+				}
 			}
 
 		}
@@ -159,15 +182,26 @@ console.log(orderinfo);
 
     		var newprice = (lastPrice - (lastPrice * (opts.spread / 2))).toFixed(10);
 
-    		var orderinfo = await restapi.createLimitOrder(opts.stock + '/' +  opts.base, 'buy', thistrade.quantity, newprice, uuid);
-
-console.log(orderinfo);
-
+			try {
+    			var orderinfo = await restapi.createLimitOrder(opts.stock + '/' +  opts.base, 'buy', thistrade.quantity, newprice, uuid);
+				console.log(orderinfo);
+			} catch (e) {
+				console.log(e);
+			}
+			
     		// Then cancel the buy order with the min price
 
 			var oominprice = null;
 			var cxlorderid = null;
-			var openorders = await restapi.getOpenOrders(opts.stock + '/' +  opts.base);
+			
+			var openorders = [];
+			
+			try {
+				openorders = await restapi.getOpenOrders(opts.stock + '/' +  opts.base);
+			} catch (e) {
+				console.log(e);
+			}
+				
 			for (let i = 0; i < openorders.length; i++)
 			{
 		
@@ -186,9 +220,11 @@ console.log(orderinfo);
 			
 			if (cxlorderid != null)
 			{
-			
-				await restapi.cancelOrder(cxlorderid);
-			
+				try {
+					await restapi.cancelOrder(cxlorderid);
+				} catch (e) {
+					console.log(e);
+				}
 			}
 
 
@@ -197,8 +233,14 @@ console.log(orderinfo);
 		
 		// Check open orders
 		
-		var openorders = await restapi.getOpenOrders(opts.stock + '/' +  opts.base);
+		var openorders = [];
 		
+		try {
+			openorders = await restapi.getOpenOrders(opts.stock + '/' +  opts.base);
+		} catch (e) {
+			console.log(e);
+		}
+				
 		var buycount = 0;
 		var sellcount = 0;
 		
@@ -213,7 +255,12 @@ console.log(orderinfo);
 		if (buycount < opts.numorders - 3 || sellcount < opts.numorders - 3)
 		{
 			// Rebuild
-			await restapi.cancelAllOrders(opts.stock + '/' + opts.base, 'all');
+			try {
+				await restapi.cancelAllOrders(opts.stock + '/' + opts.base, 'all');
+			} catch (e) {
+				console.log(e);
+			}
+			
 			await recalculate_and_enter();
 		}
 
@@ -236,15 +283,27 @@ async function recalculate_and_enter() {
 
 	console.log('recalulate and enter');
 
-    var htrades = await restapi.getHistoricalTrades(opts.stock + '/' + opts.base, 1);
-
+    var htrades = [];
+    
+    try {
+    	htrades = await restapi.getHistoricalTrades(opts.stock + '/' + opts.base, 1);
+	} catch (e) {
+		console.log(e);
+	}
+			
 	if (htrades.length > 0)
 	{
 	
 		lastPrice = parseFloat(htrades[0].price);
 		
-		let account_info = await restapi.getBalances();
-
+		var account_info = [];
+		
+		try {
+			account_info = await restapi.getBalances();
+		} catch (e) {
+			console.log(e);
+		}	
+		
 		var balances = {};
 		for (let i = 0; i < account_info.length; i++)
 		{
@@ -325,10 +384,13 @@ async function recalculate_and_enter() {
 			
 			adjstart = adjstart + 1;
 	
-			var orderinfo = await restapi.createLimitOrder(opts.stock + '/' +  opts.base, side, slidequantity, side === "buy" ? buy_price : sell_price, uuid);
-
-console.log(orderinfo);
-
+			try {
+				var orderinfo = await restapi.createLimitOrder(opts.stock + '/' +  opts.base, side, slidequantity, side === "buy" ? buy_price : sell_price, uuid);
+				console.log(orderinfo);
+			} catch (e) {
+				console.log(e);
+			}
+			
 			if (side == 'buy')
 			{
 				buy_price = (parseFloat(buy_price) - (parseFloat(buy_price) * (opts.spread / 2))).toFixed(10);
