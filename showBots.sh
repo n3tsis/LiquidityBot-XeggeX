@@ -103,7 +103,7 @@ function trimString()
 TABLE="Market,PID,Status\n"
 for f in ./pidfiles/*.pid; do
 	PID=`cat $f`
-	if ps -p $PID > /dev/null
+	if ps -o pid= -p $PID > /dev/null
 	MARKET=$(sed 's/.\/pidfiles\//''/g' <<<"$f")
 	MARKET=$(sed 's/.pid/''/g' <<<"$MARKET")
 	then
