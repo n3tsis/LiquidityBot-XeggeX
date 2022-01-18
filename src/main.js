@@ -99,15 +99,18 @@ async function runIt()
 	}
 
 	// Get last trade
-    var apiresp = await restapi.getTradeHistory(opts.stock + '/' + opts.base, 1);
+    var apiresp = await restapi.getTradeHistorySince(opts.stock + '/' + opts.base, lastCheckTime);
 
-	if (apiresp[0] && apiresp[0].createdAt > lastCheckTime)
+	for (let t = 0; t < apiresp.length; t++)
 	{
+	
+		var thistrade = apiresp[t];
 	
 		// A Trade Has Occurred
 
-		lastTradeSide = apiresp[0].side;
-		lastPrice = apiresp[0].price;
+		lastTradeSide = thistrade.side;
+		lastPrice = thistrade.price;
+		lastCheckTime = thistrade.createdAt;
 		
 		if (lastTradeSide == 'buy') // we need to sell
 		{
@@ -116,7 +119,7 @@ async function runIt()
 
     		var newprice = (lastPrice + (lastPrice * (opts.spread / 2))).toFixed(10);
 
-    		var orderinfo = await restapi.createLimitOrder(opts.stock + '/' +  opts.base, 'sell', apiresp[0].quantity, newprice, uuid);
+    		var orderinfo = await restapi.createLimitOrder(opts.stock + '/' +  opts.base, 'sell', thistrade.quantity, newprice, uuid);
 
 console.log(orderinfo);
 
@@ -156,7 +159,7 @@ console.log(orderinfo);
 
     		var newprice = (lastPrice - (lastPrice * (opts.spread / 2))).toFixed(10);
 
-    		var orderinfo = await restapi.createLimitOrder(opts.stock + '/' +  opts.base, 'buy', apiresp[0].quantity, newprice, uuid);
+    		var orderinfo = await restapi.createLimitOrder(opts.stock + '/' +  opts.base, 'buy', thistrade.quantity, newprice, uuid);
 
 console.log(orderinfo);
 
@@ -215,8 +218,6 @@ console.log(orderinfo);
 		}
 
 	}
-
-	lastCheckTime = Date.now();
 
 	setTimeout(function() {
 	

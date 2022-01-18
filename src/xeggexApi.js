@@ -343,6 +343,30 @@ class xeggexApi {
 
     }
 
+    getTradeHistorySince(symbol, since = 0, limit = 50, skip = 0)
+    {
+
+        return new Promise((resolve, reject) => {
+        
+        	(async () => {
+
+				try {
+        			if (symbol == null) symbol = '';
+					limit = parseInt(limit);
+					skip = parseInt(skip);
+				
+            		const response = await got.get(`gettradessince?symbol=${symbol}&since=${since}&limit=${limit}&skip=${skip}`, this.options).json();
+					resolve(response);
+				} catch (e) {
+                    reject(e);
+                }
+            
+            })();
+            
+        });
+
+    }
+    
     cancelOrder(orderid)
     {
 
