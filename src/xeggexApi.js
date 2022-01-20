@@ -354,7 +354,8 @@ class xeggexApi {
         			if (symbol == null) symbol = '';
 					limit = parseInt(limit);
 					skip = parseInt(skip);
-				
+					since = parseInt(since);
+
             		const response = await got.get(`gettradessince?symbol=${symbol}&since=${since}&limit=${limit}&skip=${skip}`, this.options).json();
 					resolve(response);
 				} catch (e) {

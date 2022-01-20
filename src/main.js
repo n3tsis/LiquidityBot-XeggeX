@@ -85,7 +85,7 @@ onShutdown("main", async function () {
 
 	  console.log('Remove PID file');
 	  
-      resolve(apiresp);
+      resolve(true);
 				
     })();
 			
@@ -119,8 +119,8 @@ async function runIt()
 		// A Trade Has Occurred
 
 		lastTradeSide = thistrade.side;
-		lastPrice = thistrade.price;
-		lastCheckTime = thistrade.createdAt;
+		lastPrice = parseFloat(thistrade.price);
+		lastCheckTime = parseInt(thistrade.createdAt);
 		
 		if (lastTradeSide == 'buy') // we need to sell
 		{
@@ -293,7 +293,9 @@ async function recalculate_and_enter() {
 			
 	if (htrades.length > 0)
 	{
-	
+
+		lastCheckTime = Date.now(); // ms
+
 		lastPrice = parseFloat(htrades[0].price);
 		
 		var account_info = [];
