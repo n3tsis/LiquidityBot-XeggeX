@@ -52,7 +52,7 @@ kill PID
 `./liquidityProvider.sh` takes in 8 required arguments;
 * `--spread=`: The spread percentage on the asset you would like to market make on
 * `--baseexposure= or -be=`: The maximum percentage of your base account you want in the order book at any given time
-* `--stockexposure= or -se=`: The maximum percentage of your stock ccount you want in the order book at any given time
+* `--stockexposure= or -se=`: The maximum percentage of your stock account you want in the order book at any given time
 * `--basemax=`: The maximum quantity of base asset can use to restrict max exposure
 * `--stockmax=`: The maximum quantity of stock asset can use to restrict max exposure
 * `--base= or -b=`: The base asset (e.g. in ETH/BTC, BTC is the base asset)

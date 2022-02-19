@@ -135,44 +135,6 @@ async function runIt()
 			} catch (e) {
 				console.log(e);
 			}
-			
-    		// Then cancel the sell order with the max price
-    		
-			var oomaxprice = null;
-			var cxlorderid = null;
-			
-			var openorders = [];
-			
-			try {
-				openorders = await restapi.getOpenOrders(opts.stock + '/' +  opts.base);
-			} catch (e) {
-				console.log(e);
-			}
-			
-			for (let i = 0; i < openorders.length; i++)
-			{
-		
-				if (openorders[i].side == 'sell')
-				{
-				
-					if (oomaxprice == null || Big(openorders[i].price).gt(oomaxprice))
-					{
-						oomaxprice = openorders[i].price;
-						cxlorderid = openorders[i].id;
-					}
-				
-				}
-
-			}
-			
-			if (cxlorderid != null)
-			{
-				try {
-					await restapi.cancelOrder(cxlorderid);
-				} catch (e) {
-					console.log(e);
-				}
-			}
 
 		}
 		else // we need to buy
@@ -188,82 +150,47 @@ async function runIt()
 			} catch (e) {
 				console.log(e);
 			}
-			
-    		// Then cancel the buy order with the min price
-
-			var oominprice = null;
-			var cxlorderid = null;
-			
-			var openorders = [];
-			
-			try {
-				openorders = await restapi.getOpenOrders(opts.stock + '/' +  opts.base);
-			} catch (e) {
-				console.log(e);
-			}
-				
-			for (let i = 0; i < openorders.length; i++)
-			{
-		
-				if (openorders[i].side == 'buy')
-				{
-				
-					if (oominprice == null || Big(openorders[i].price).lt(oominprice))
-					{
-						oominprice = openorders[i].price;
-						cxlorderid = openorders[i].id;
-					}
-				
-				}
-
-			}
-			
-			if (cxlorderid != null)
-			{
-				try {
-					await restapi.cancelOrder(cxlorderid);
-				} catch (e) {
-					console.log(e);
-				}
-			}
-
-
 
 		}
-		
-		// Check open orders
-		
-		var openorders = [];
-		
+
+	}
+
+	// Check open orders, if one side has less than half of original specification, then we are out of balance and need to recalculate
+	
+	var openorders = [];
+	
+	try {
+		openorders = await restapi.getOpenOrders(opts.stock + '/' +  opts.base);
+	} catch (e) {
+		console.log(e);
+	}
+			
+	var buycount = 0;
+	var sellcount = 0;
+	
+	for (let i = 0; i < openorders.length; i++)
+	{
+	
+		if (openorders[i].side == 'buy') buycount++;
+		else sellcount++;
+
+	}
+
+	if (buycount < opts.numorders/2 || sellcount < opts.numorders/2)
+	{
+	
+		var heavyside = 'buy';
+		if (buycount < opts.numorders/2) heavyside = 'sell';
+	
+		// Rebuild
 		try {
-			openorders = await restapi.getOpenOrders(opts.stock + '/' +  opts.base);
+			await restapi.cancelAllOrders(opts.stock + '/' + opts.base, 'all');
 		} catch (e) {
 			console.log(e);
 		}
-				
-		var buycount = 0;
-		var sellcount = 0;
 		
-		for (let i = 0; i < openorders.length; i++)
-		{
+		await recalculate_and_enter(heavyside);
 		
-			if (openorders[i].side == 'buy') buycount++;
-			else sellcount++;
-
-		}
-
-		if (buycount < opts.numorders - 3 || sellcount < opts.numorders - 3)
-		{
-			// Rebuild
-			try {
-				await restapi.cancelAllOrders(opts.stock + '/' + opts.base, 'all');
-			} catch (e) {
-				console.log(e);
-			}
-			
-			await recalculate_and_enter();
-		}
-
 	}
 
 	setTimeout(function() {
@@ -279,7 +206,7 @@ async function runIt()
 // Enter a buy order with n% from account (y/2)% away from the last price
 // Enter a sell order with n% from accoutn (y/2)% away from the last price
 
-async function recalculate_and_enter() {
+async function recalculate_and_enter(heavyside = null) {
 
 	console.log('recalulate and enter');
 
@@ -297,6 +224,27 @@ async function recalculate_and_enter() {
 		lastCheckTime = Date.now(); // ms
 
 		lastPrice = parseFloat(htrades[0].price);
+		
+		// Check current spread
+		
+		var marketInfo = await restapi.getOrderBookBySymbol(opts.stock + '_' + opts.base);
+
+		if (marketInfo.asks[0].price && marketInfo.bids[0].price)
+		{
+		
+			var bestbid = marketInfo.bids[0].price;
+			var bestask = marketInfo.asks[0].price;
+			
+			if (Big(lastPrice).gte(bestask) || Big(lastPrice).lte(bestbid))
+			{
+			
+				lastPrice = Big(bestask).plus(bestbid).div(2).toFixed(10);
+			
+			}
+
+		}
+		
+		// end spread check
 		
 		var account_info = [];
 		
@@ -369,8 +317,17 @@ async function recalculate_and_enter() {
 			
 			if (side === "buy")
 			{
-			
-				var adjust = Big(quantity_base).times(adjstart).div(25).toFixed(8);
+
+				var adjust = Big(quantity_base).times(adjstart).div(opts.numorders).toFixed(8);
+
+				if (heavyside == 'buy')
+				{
+				
+					let heavyOrders = Big(opts.numorders).times(0.80);
+				
+					adjust = Big(quantity_base).times(adjstart).div(heavyOrders).toFixed(8);
+
+				}
 				
 				slidequantity = Big(quantity_base).plus(adjust).toFixed(8);
 				
@@ -378,7 +335,16 @@ async function recalculate_and_enter() {
 			else
 			{
 			
-				var adjust = Big(quantity_stock).times(adjstart).div(25).toFixed(8);
+				var adjust = Big(quantity_stock).times(adjstart).div(opts.numorders).toFixed(8);
+
+				if (heavyside == 'sell')
+				{
+				
+					let heavyOrders = Big(opts.numorders).times(0.80);
+
+					adjust = Big(quantity_stock).times(adjstart).div(heavyOrders).toFixed(8);
+
+				}
 				
 				slidequantity = Big(quantity_stock).plus(adjust).toFixed(8);
 			
