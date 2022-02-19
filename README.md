@@ -9,8 +9,8 @@ apt-get install -y nodejs
 
 **To Install:**
 ```
-git clone https://github.com/xeggex/liquidityProvider
-cd liquidityProvider
+git clone https://github.com/xeggex/liquidityBot
+cd liquidityBot
 chmod u+x ./install.sh
 ./install.sh
 ```
